@@ -1,0 +1,44 @@
+* Expense Tracker
+*A SwiftUI Expenses Tracker.*
+
+[[gif.gif]]
+
+** Day 36
+*** @ObservedObject & @Published
+Using classes to track data & state across multiple views, as structs are owned by a single object.
+#+BEGIN_SRC Swift
+class User {
+    @Published var firstName = "Bilbo"
+    @Published var lastName = "Baggins"
+}
+
+@ObservedObject var user = User()
+#+END_SRC
+*** Sheets are similar to Alerts in SwiftUI, where you would use a property to track it's state. And then add it as a view modifier:
+#+BEGIN_SRC Swift
+Button("Show Sheet, greet: Leonte") {
+  self.showingSheet.toggle()
+}.sheet(isPresented: $showingSheet) {
+   SecondView(name: "Leonte")
+ }
+#+END_SRC
+*** ForEach {}.onDelete(perform: removeRows)
+It has to be added as a modifier on ForEach, it won't work directly with a List.
+The onDelete(perform:) takes as parameter the name of a function which takes an IndexSet:  Optional<(IndexSet) -> Void
+And in it we can directly call the remove(atOffsets:) array function.
+#+BEGIN_SRC Swift
+func removeRows(at offsets: IndexSet) {
+    numbers.remove(atOffsets: offsets)
+}
+#+END_SRC
+*** Edit Mode
+Using a NavigationView, add a modifier on the inner view (eg: VStack): 
+#+BEGIN_SRC Swift
+.navigationBarItems(leading: EditButton())
+#+END_SRC
+*** UserDefaults
+#+BEGIN_SRC Swift
+UserDefaults.standard.set(self.tapCount, forKey: "Tap") //to set
+@State var tapCount = UserDefaults.standard.integer(forKey: "Tap") // to retrieve
+#+END_SRC
+*** Codable
