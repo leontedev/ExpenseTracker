@@ -8,67 +8,70 @@
 
 import SwiftUI
 
-struct SecondView: View {
-    var name: String
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        VStack {
-            Text("Hello \(name)!")
-            Button("Dismiss") {
-                self.presentationMode.wrappedValue.dismiss()
+
+class Expenses: ObservableObject {
+    @Published var items = [ExpenseItem]() {
+        didSet {
+            let encoder = JSONEncoder()
+            if let data = try? encoder.encode(items) {
+                UserDefaults.standard.set(data, forKey: "Items")
             }
         }
     }
+    
+    init() {
+        if let data = UserDefaults.standard.data(forKey: "Items") {
+            let decoder = JSONDecoder()
+            if let decodedData = try? decoder.decode([ExpenseItem].self, from: data) {
+                items = decodedData
+                return
+            }
+        }
+        items = []
+    }
 }
 
+
 struct ContentView: View {
-    // Sheets
-    @State private var showingSheet = false
-    
-    // ForEach .onDelete
-    @State var numbers = [Int]()
-    @State var currentNumber = 1
-    
-    // UserDefaults
-    @State var tapCount = UserDefaults.standard.integer(forKey: "Tap") // if not found, returns 0
+    @ObservedObject var expenses = Expenses()
+    @State private var showingAddExpense = false
     
     var body: some View {
         NavigationView {
-            VStack {
-                List {
-                    ForEach(numbers, id: \.self) {
-                        Text("\($0)")
-                    }.onDelete(perform: <#T##Optional<(IndexSet) -> Void>##Optional<(IndexSet) -> Void>##(IndexSet) -> Void#>)
+            List {
+                // id: \.id is not required as ExpenseItem is conforming to the Identifiable protocol
+                ForEach(expenses.items) { item in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(item.name)
+                                .font(.headline)
+                            Text(item.type)
+                                .font(.footnote)
+                        }
+                        
+                        Spacer()
+                        Text("$\(item.amount)")
+                    }
                 }
-
-                Button("Add Number") {
-                    self.numbers.append(self.currentNumber)
-                    self.currentNumber += 1
+                .onDelete(perform: removeItems)
+            }
+            .navigationBarTitle("iExpense")
+            .navigationBarItems(trailing:
+                Button(action: {
+                    self.showingAddExpense.toggle()
+                }) {
+                    Image(systemName: "plus")
+                    
                 }
-                
-                Spacer()
-                
-                Button("Tap count: \(tapCount)") {
-                    self.tapCount += 1
-                    UserDefaults.standard.set(self.tapCount, forKey: "Tap")
-                }
-                
-                Spacer()
-                
-                Button("Show Sheet, greet: Leonte") {
-                    self.showingSheet.toggle()
-                }
-                .sheet(isPresented: $showingSheet) {
-                    SecondView(name: "Leonte")
-                }
-            }.navigationBarItems(leading: EditButton())
-        }
+            )
+        }.sheet(isPresented: $showingAddExpense, content: {
+            AddView(expenses: self.expenses)
+        })
         
     }
     
-    func removeRows(at offsets: IndexSet) {
-        numbers.remove(atOffsets: offsets)
+    func removeItems(at offsets: IndexSet) {
+        expenses.items.remove(atOffsets: offsets)
     }
 }
 

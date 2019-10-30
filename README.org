@@ -42,3 +42,62 @@ UserDefaults.standard.set(self.tapCount, forKey: "Tap") //to set
 @State var tapCount = UserDefaults.standard.integer(forKey: "Tap") // to retrieve
 #+END_SRC
 *** Codable
+** Day 37
+*** Sharing data between views using classes that conform to the ObservableObject protocol
+We defined a class outside of the ContentView, which contains properties marked with @Published. Each time the value is updated by any of the views, the other views will be reloaded.
+#+BEGIN_SRC Swift
+class Expenses: ObservableObject {
+    @Published var items = [ExpenseItem]()
+#+END_SRC
+And then in the main view we create a new instance:
+#+BEGIN_SRC Swift
+struct ContentView: View {
+    @ObservedObject var expenses = Expenses()
+#+END_SRC
+However in the other views we don't create another instance:
+#+BEGIN_SRC Swift
+struct AddView: View {
+    @ObservedObject var expenses: Expenses
+#+END_SRC
+Instead, we pass a reference to the original instance, eg: in ContentView:
+#+BEGIN_SRC Swift
+.sheet(isPresented: $showingAddExpense, content: {
+    AddView(expenses: self.expenses)
+})
+#+END_SRC
+*** By having the ExpenseItem struct conform to Identifiable, we don't need to specify a unique id in ForEach { } 
+To conform to the Identifiable protocol, we need the type to contain a property called id:
+#+BEGIN_SRC Swift
+struct ExpenseItem: Identifiable, Codable {
+    let id = UUID()
+    let name: String
+    let type: String
+    let amount: Int
+}
+#+END_SRC
+And now ForEach can uniquely identify each value of the array of ExpenseItems
+*** Reading & Writing user data to UserDefaults.standard
+On instantiating the Expenses class - we read the data from UserDefaults. And when data is added or removed, we update the UserDefaults data as well:
+#+BEGIN_SRC Swift
+class Expenses: ObservableObject {
+    @Published var items = [ExpenseItem]() {
+        didSet {
+            let encoder = JSONEncoder()
+            if let data = try? encoder.encode(items) {
+                UserDefaults.standard.set(data, forKey: "Items")
+            }
+        }
+    }
+    
+    init() {
+        if let data = UserDefaults.standard.data(forKey: "Items") {
+            let decoder = JSONDecoder()
+            if let decodedData = try? decoder.decode([ExpenseItem].self, from: data) {
+                items = decodedData
+                return
+            }
+        }
+        items = []
+    }
+}
+#+END_SRC
