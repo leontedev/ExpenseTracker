@@ -8,30 +8,6 @@
 
 import SwiftUI
 
-
-class Expenses: ObservableObject {
-    @Published var items = [ExpenseItem]() {
-        didSet {
-            let encoder = JSONEncoder()
-            if let data = try? encoder.encode(items) {
-                UserDefaults.standard.set(data, forKey: "Items")
-            }
-        }
-    }
-    
-    init() {
-        if let data = UserDefaults.standard.data(forKey: "Items") {
-            let decoder = JSONDecoder()
-            if let decodedData = try? decoder.decode([ExpenseItem].self, from: data) {
-                items = decodedData
-                return
-            }
-        }
-        items = []
-    }
-}
-
-
 struct ContentView: View {
     @ObservedObject var expenses = Expenses()
     @State private var showingAddExpense = false
@@ -50,13 +26,14 @@ struct ContentView: View {
                         }
                         
                         Spacer()
-                        Text("$\(item.amount)")
+                        
+                        ItemAmount(item: item)
                     }
                 }
                 .onDelete(perform: removeItems)
             }
             .navigationBarTitle("iExpense")
-            .navigationBarItems(trailing:
+            .navigationBarItems(leading: EditButton(), trailing:
                 Button(action: {
                     self.showingAddExpense.toggle()
                 }) {
@@ -68,6 +45,7 @@ struct ContentView: View {
             AddView(expenses: self.expenses)
         })
         
+        
     }
     
     func removeItems(at offsets: IndexSet) {
@@ -78,5 +56,15 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+struct ItemAmount: View {
+    var item: ExpenseItem
+    
+    var body: some View {
+        Text("$\(item.amount)")
+            .foregroundColor(item.amount < 10 ? .gray : .black)
+            .font(item.amount > 100 ? .headline : .body)
     }
 }

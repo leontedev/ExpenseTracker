@@ -1,7 +1,7 @@
 * Expense Tracker
 *A SwiftUI Expenses Tracker.*
 
-[[gif.gif]]
+[[gif.gif]] [[gif2.gif]]
 
 ** Day 36
 *** @ObservedObject & @Published
@@ -100,4 +100,57 @@ class Expenses: ObservableObject {
         items = []
     }
 }
+#+END_SRC
+** Day 38
+#+BEGIN_QUOTE
+1. Add an Edit/Done button to ContentView so users can delete rows more easily.
+#+END_QUOTE
+Added a .navigationBarItems(leading: EditButton()) on the child view of the NavigationView
+#+BEGIN_QUOTE
+2. Modify the expense amounts in ContentView to contain some styling depending on their value – expenses under $10 should have one style, expenses under $100 another, and expenses over $100 a third style. What those styles are depend on you.
+#+END_QUOTE
+Had some trouble with this error, when adding two view modifiers to the same Text view: *The compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions.*
+#+BEGIN_SRC Swift
+Text("$\(item.amount)")
+    .foregroundColor(item.amount > 100 ? .red : .black)
+    .font(item.amount < 10 ? .caption : .headline)
+#+END_SRC
+I extracted the subview (the Canvas *has* to be enabled for the option to appear in the Actions menu) and the error went away.
+There seems to be a bug/weird behaviour caused by List/ForEach in conjunction with more... "complex" views.
+#+BEGIN_SRC Swift
+[...]
+
+    ItemAmount(item: item)
+
+[...]
+
+
+struct ItemAmount: View {
+    var item: ExpenseItem
+    
+    var body: some View {
+        Text("$\(item.amount)")
+            .foregroundColor(item.amount < 10 ? .gray : .black)
+            .font(item.amount > 100 ? .headline : .body)
+    }
+}
+#+END_SRC
+
+#+BEGIN_QUOTE
+3. Add some validation to the Save button in AddView. If you enter “fish” or another thing that can’t be converted to an integer, show an alert telling users what the problem is.
+#+END_QUOTE
+#+BEGIN_SRC Swift
+if let actualAmount = Int(self.amount) {
+                    let item = ExpenseItem(name: self.name, type: self.type, amount: actualAmount)
+                    self.expenses.items.append(item)
+                    self.name = ""
+                    self.amount = ""
+                    self.presentationMode.wrappedValue.dismiss()
+                } else {
+                    self.showAlert = true
+                }
+            })
+        }.alert(isPresented: $showAlert) {
+            Alert(title: Text("Invalid amount"), message: Text("You need to enter an Integer number."))
+        }
 #+END_SRC
